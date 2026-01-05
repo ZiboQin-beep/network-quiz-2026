@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>高级计算机网络 - 期末刷题系统4.0</title>
+    <title>高级计算机网络 - 期末刷题系统4.1</title>
     <script src="questions.js"></script>
     <script src="challenge.js"></script>
     <script src="experiment.js"></script>
@@ -12,7 +12,6 @@
         body { font-family: 'PingFang SC', -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
         .app-container { width: 100%; max-width: 800px; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); padding: 30px; }
         
-        /* 顶部导航与切换 */
         .meta-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 15px; flex-wrap: wrap; gap: 10px; }
         .mode-group { display: flex; gap: 8px; }
         .tag { padding: 6px 16px; border-radius: 50px; color: white; font-size: 14px; font-weight: bold; transition: 0.3s; border: none; cursor: pointer; }
@@ -22,7 +21,6 @@
         .tag-wrong { background: var(--danger); cursor: pointer; }
         .inactive { opacity: 0.4; transform: scale(0.95); }
 
-        /* 题目展示区 */
         .q-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px; }
         .type-label { padding: 2px 8px; border-radius: 4px; font-size: 12px; color: white; white-space: nowrap; margin-top: 4px; }
         .bg-single { background: #17a2b8; }
@@ -30,21 +28,18 @@
         .bg-judge { background: #fd7e14; }
         .q-title { font-size: 18px; line-height: 1.6; color: #333; font-weight: 600; }
 
-        /* 选项样式 */
         .options-list { display: grid; gap: 12px; margin-bottom: 25px; }
         .opt-item { padding: 15px; border: 2px solid #ebedf0; border-radius: 10px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; position: relative; }
         .opt-item:hover { background: #f1f3f5; border-color: #dee2e6; }
         .opt-item.selected { border-color: var(--primary); background: #e7f1ff; }
         .opt-item input { width: 18px; height: 18px; cursor: pointer; }
 
-        /* 反馈与结果 */
         .feedback { padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; }
         .correct-ans { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .wrong-ans { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .highlight-correct { background: #d4edda !important; border-color: var(--success) !important; }
         .highlight-wrong { background: #f8d7da !important; border-color: var(--danger) !important; }
 
-        /* 控制按钮 */
         .actions { display: flex; gap: 15px; }
         button.main-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         #check-btn { background: var(--primary); color: white; }
@@ -60,7 +55,7 @@
     <div class="meta-info">
         <div class="mode-group">
             <button id="mode-homework" class="tag btn-homework" onclick="setPool('homework')">📚 课后作业</button>
-            <button id="mode-ppt" class="tag btn-ppt inactive" onclick="setPool('ppt')">🔥 PPT知识点</button>
+            <button id="mode-ppt" class="tag btn-ppt inactive" onclick="setPool('ppt')">🔥 PPT挑战</button>
             <button id="mode-lab" class="tag btn-lab inactive" onclick="setPool('lab')">🧪 实验回顾</button>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
@@ -72,7 +67,7 @@
     <div id="quiz-box">
         <div class="q-header">
             <span id="q-type" class="type-label"></span>
-            <div id="q-title" class="q-title"></div>
+            <div id="q-title" class="q-title">正在初始化...</div>
         </div>
         <div id="options" class="options-list"></div>
         <div id="feedback" class="feedback"></div>
@@ -84,23 +79,19 @@
 </div>
 
 <script>
-    // 状态管理 - 默认题库指向 bank (questions.js)
     let currentPool = []; 
     let workingList = [];
     let currentIdx = 0;
     let isWrongMode = false;
     let wrongList = JSON.parse(localStorage.getItem('net_wrong_list') || '[]');
 
-    // 初始化加载
     window.onload = () => {
         updateWrongDisplay();
         setPool('homework');
     };
 
-    // 切换题库源
     function setPool(type) {
         isWrongMode = false;
-        // 重置所有按钮状态
         document.getElementById('mode-homework').classList.add('inactive');
         document.getElementById('mode-ppt').classList.add('inactive');
         document.getElementById('mode-lab').classList.add('inactive');
@@ -113,7 +104,6 @@
             currentPool = typeof experimentBank !== 'undefined' ? experimentBank : [];
             document.getElementById('mode-lab').classList.remove('inactive');
         } else {
-            // 默认全量题库改为课后作业，对应 questions.js 里的变量 (假设叫 bank)
             currentPool = typeof bank !== 'undefined' ? bank : [];
             document.getElementById('mode-homework').classList.remove('inactive');
         }
@@ -123,7 +113,6 @@
         renderQuestion();
     }
 
-    // 错题模式切换
     function toggleWrongMode() {
         if (wrongList.length === 0) return alert("暂无错题！");
         isWrongMode = !isWrongMode;
@@ -132,7 +121,7 @@
             btn.style.boxShadow = "0 0 10px var(--danger)";
             workingList = currentPool.filter(q => wrongList.includes(q.title));
             if (workingList.length === 0) {
-                alert("当前选中的板块中没有对应的错题。");
+                alert("当前选中的板块中没有错题。");
                 isWrongMode = false;
                 btn.style.boxShadow = "none";
                 return;
@@ -147,11 +136,10 @@
 
     function renderQuestion() {
         if (workingList.length === 0) {
-            document.getElementById('q-title').innerText = "该题库暂无数据，请检查 JS 文件是否正确加载。";
+            document.getElementById('q-title').innerText = "未发现题目，请确保 JS 文件已正确上传。";
             return;
         }
         const q = workingList[currentIdx];
-        
         document.getElementById('feedback').style.display = 'none';
         document.getElementById('next-btn').disabled = true;
         document.getElementById('check-btn').disabled = false;
@@ -160,12 +148,10 @@
         const typeEl = document.getElementById('q-type');
         typeEl.innerText = q.type === 'single' ? '单选' : (q.type === 'multi' ? '多选' : '判断');
         typeEl.className = `type-label bg-${q.type}`;
-        
         document.getElementById('q-title').innerText = q.title;
 
         const optContainer = document.getElementById('options');
         optContainer.innerHTML = '';
-        
         q.options.forEach((text, index) => {
             const div = document.createElement('div');
             div.className = 'opt-item';
@@ -193,9 +179,7 @@
 
     function checkAnswer() {
         const q = workingList[currentIdx];
-        const selectedInputs = document.querySelectorAll('input[name="opt"]:checked');
-        const selected = Array.from(selectedInputs).map(i => parseInt(i.value));
-        
+        const selected = Array.from(document.querySelectorAll('input[name="opt"]:checked')).map(i => parseInt(i.value));
         if (selected.length === 0) return alert("请先选择答案！");
 
         const isCorrect = JSON.stringify(selected.sort()) === JSON.stringify([...q.answer].sort());
@@ -205,10 +189,16 @@
         if (isCorrect) {
             feedback.className = 'feedback correct-ans';
             feedback.innerHTML = '<strong>✔ 回答正确！</strong>';
+            
+            // --- 错题清除逻辑 ---
+            if (wrongList.includes(q.title)) {
+                wrongList = wrongList.filter(t => t !== q.title);
+                saveWrongList();
+            }
         } else {
             feedback.className = 'feedback wrong-ans';
             const correctText = q.answer.map(i => q.options[i]).join('，');
-            feedback.innerHTML = `<strong>✘ 回答错误。</strong> 正确答案是：${correctText}`;
+            feedback.innerHTML = `<strong>✘ 回答错误。</strong> 正确答案：${correctText}`;
             if (!wrongList.includes(q.title)) {
                 wrongList.push(q.title);
                 saveWrongList();
@@ -229,7 +219,7 @@
         if (currentIdx < workingList.length) {
             renderQuestion();
         } else {
-            alert("本板块练习已完成！");
+            alert("本板块已刷完！");
             currentIdx = 0;
             renderQuestion();
         }
