@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>高级计算机网络 - 期末刷题系统5.1</title>
+    <title>高级计算机网络 - 期末刷题系统6.0</title>
     <script src="questions.js"></script>
     <script src="challenge.js"></script>
     <script src="experiment.js"></script>
@@ -45,8 +45,8 @@
 <div class="app-container">
     <div class="meta-info">
         <div class="mode-group">
-            <button id="mode-homework" class="tag btn-homework" onclick="initPool('homework')">📚 课后作业</button>
-            <button id="mode-ppt" class="tag btn-ppt inactive" onclick="initPool('ppt')">🔥 PPT知识</button>
+            <button id="mode-homework" class="tag btn-homework" onclick="setPool('homework')">📚 课后作业</button>
+            <button id="mode-ppt" class="tag btn-ppt inactive" onclick="setPool('ppt')">🔥 PPT知识</button>
             <button id="mode-lab" class="tag btn-lab inactive" onclick="setPool('lab')">🧪 实验回顾</button>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
@@ -70,63 +70,72 @@
 </div>
 
 <script>
-    let rawPool = [];       // 原始题库备份
-    let workingList = [];   // 当前渲染的打乱后的题库
-    let currentIdx = 0;
-    let isWrongMode = false;
-    let wrongList = JSON.parse(localStorage.getItem('net_wrong_list') || '[]');
     let currentModule = 'homework';
+    let isWrongMode = false;
+    let workingList = [];
+    let currentIdx = 0;
+    let wrongList = JSON.parse(localStorage.getItem('net_wrong_list') || '[]');
 
-    window.onload = () => {
-        updateWrongDisplay();
-        const saved = JSON.parse(localStorage.getItem('net_quiz_v6_save'));
-        if (saved) {
-            currentModule = saved.module;
-            currentIdx = saved.index;
-            loadModule(currentModule, false); // 加载但不打乱，使用保存的顺序
-            workingList = saved.list;        // 恢复保存的题目顺序
-            renderQuestion();
-        } else {
-            initPool('homework');
-        }
+    // 关键：为每个板块独立保存进度和随机后的列表
+    let moduleArchives = JSON.parse(localStorage.getItem('net_module_archives_v8')) || {
+        homework: { list: null, index: 0 },
+        ppt: { list: null, index: 0 },
+        lab: { list: null, index: 0 }
     };
 
-    // 初始化/切换题库并彻底打乱
-    function initPool(type) {
-        loadModule(type);
-        // 彻底打乱题目顺序
-        workingList = [...rawPool].sort(() => Math.random() - 0.5);
-        // 彻底打乱每道题的选项顺序
-        workingList = workingList.map(q => shuffleOptions(q));
-        currentIdx = 0;
+    window.onload = () => {
+        updateWrongCount();
+        const lastMod = localStorage.getItem('net_last_mod') || 'homework';
+        setPool(lastMod, true); // 页面加载时恢复上次板块
+    };
+
+    function setPool(type, isFirstLoad = false) {
+        isWrongMode = false;
+        currentModule = type;
+        localStorage.setItem('net_last_mod', type);
+
+        // UI 激活状态
+        document.querySelectorAll('.mode-group .tag').forEach(b => b.classList.add('inactive'));
+        document.getElementById(`mode-${type}`).classList.remove('inactive');
+        document.getElementById('wrong-btn').style.boxShadow = "none";
+
+        // 如果该板块还没初始化，或者不是恢复加载而是用户点击切换，且该板块还没数据，则初始化
+        if (!moduleArchives[type].list || moduleArchives[type].list.length === 0) {
+            createNewArchive(type);
+        }
+
+        workingList = moduleArchives[type].list;
+        currentIdx = moduleArchives[type].index;
+        
+        updateWrongCount();
         renderQuestion();
     }
 
-    function loadModule(type, setActive = true) {
-        currentModule = type;
-        if(setActive) {
-            document.querySelectorAll('.mode-group .tag').forEach(b => b.classList.add('inactive'));
-            document.getElementById(`mode-${type}`).classList.remove('inactive');
-        }
-        
-        if (type === 'ppt') rawPool = challengeBank || [];
-        else if (type === 'lab') rawPool = experimentBank || [];
-        else rawPool = bank || [];
-    }
+    function createNewArchive(type) {
+        let source = [];
+        if (type === 'ppt') source = typeof challengeBank !== 'undefined' ? challengeBank : [];
+        else if (type === 'lab') source = typeof experimentBank !== 'undefined' ? experimentBank : [];
+        else source = typeof bank !== 'undefined' ? bank : [];
 
-    // 随机打乱选项逻辑
-    function shuffleOptions(q) {
-        let opts = q.options.map((t, i) => ({ text: t, isCorrect: q.answer.includes(i) }));
-        opts.sort(() => Math.random() - 0.5);
-        return {
-            ...q,
-            options: opts.map(o => o.text),
-            answer: opts.map((o, i) => o.isCorrect ? i : null).filter(v => v !== null)
-        };
+        // 打乱题目
+        let shuffled = [...source].sort(() => Math.random() - 0.5);
+        // 处理选项逻辑：判断题不乱序，其他乱序
+        moduleArchives[type].list = shuffled.map(q => {
+            if (q.type === 'judge') return { ...q };
+            let opts = q.options.map((t, i) => ({ text: t, isCorrect: q.answer.includes(i) }));
+            opts.sort(() => Math.random() - 0.5);
+            return {
+                ...q,
+                options: opts.map(o => o.text),
+                answer: opts.map((o, i) => o.isCorrect ? i : null).filter(v => v !== null)
+            };
+        });
+        moduleArchives[type].index = 0;
+        saveArchives();
     }
 
     function renderQuestion() {
-        if (!workingList[currentIdx]) return;
+        if (!workingList || !workingList[currentIdx]) return;
         const q = workingList[currentIdx];
         
         document.getElementById('feedback').style.display = 'none';
@@ -139,31 +148,19 @@
         typeEl.className = `type-label bg-${q.type}`;
         document.getElementById('q-title').innerText = q.title;
 
-        const optContainer = document.getElementById('options');
-        optContainer.innerHTML = '';
-        q.options.forEach((text, index) => {
+        const container = document.getElementById('options');
+        container.innerHTML = '';
+        q.options.forEach((text, i) => {
             const div = document.createElement('div');
             div.className = 'opt-item';
-            div.innerHTML = `
-                <input type="${q.type === 'multi' ? 'checkbox' : 'radio'}" name="opt" value="${index}" id="opt-${index}">
-                <label for="opt-${index}" style="cursor:pointer; width:100%">${text}</label>
-            `;
+            div.innerHTML = `<input type="${q.type==='multi'?'checkbox':'radio'}" name="opt" id="o${i}" value="${i}"><label for="o${i}" style="width:100%">${text}</label>`;
             div.onclick = (e) => {
                 if (!document.getElementById('next-btn').disabled) return;
                 const input = div.querySelector('input');
-                if (e.target.tagName !== 'INPUT') {
-                    input.checked = q.type === 'multi' ? !input.checked : true;
-                }
-                updateStyles();
+                if (e.target.tagName !== 'INPUT') input.checked = q.type==='multi' ? !input.checked : true;
+                document.querySelectorAll('.opt-item').forEach(el => el.classList.toggle('selected', el.querySelector('input').checked));
             };
-            optContainer.appendChild(div);
-        });
-        saveState();
-    }
-
-    function updateStyles() {
-        document.querySelectorAll('.opt-item').forEach(el => {
-            el.classList.toggle('selected', el.querySelector('input').checked);
+            container.appendChild(div);
         });
     }
 
@@ -172,26 +169,25 @@
         const selected = Array.from(document.querySelectorAll('input[name="opt"]:checked')).map(i => parseInt(i.value));
         if (selected.length === 0) return alert("请选个答案！");
 
-        const correct = JSON.stringify(selected.sort()) === JSON.stringify([...q.answer].sort());
+        const isCorrect = JSON.stringify(selected.sort()) === JSON.stringify([...q.answer].sort());
         const fb = document.getElementById('feedback');
         fb.style.display = 'block';
 
-        if (correct) {
+        if (isCorrect) {
             fb.className = 'feedback correct-ans';
-            fb.innerHTML = '<strong>✔ 漂亮！答对了。</strong>';
+            fb.innerHTML = '<strong>✔ 漂亮！答对了。</strong>'; // 恢复你的文案
             if (wrongList.includes(q.title)) {
                 wrongList = wrongList.filter(t => t !== q.title);
-                updateWrongDisplay();
             }
         } else {
             fb.className = 'feedback wrong-ans';
-            fb.innerHTML = `<strong>✘ 记错了！</strong> 正确答案：${q.answer.map(i => q.options[i]).join('，')}`;
+            fb.innerHTML = `<strong>✘ 记错了！</strong> 正确答案：${q.answer.map(i => q.options[i]).join('，')}`; // 恢复你的文案
             if (!wrongList.includes(q.title)) {
                 wrongList.push(q.title);
-                updateWrongDisplay();
             }
         }
 
+        updateWrongCount();
         document.querySelectorAll('.opt-item').forEach((item, i) => {
             if (q.answer.includes(i)) item.classList.add('highlight-correct');
             else if (selected.includes(i)) item.classList.add('highlight-wrong');
@@ -205,38 +201,59 @@
         currentIdx++;
         if (currentIdx >= workingList.length) {
             alert("本轮结束！重排题库。");
-            initPool(currentModule);
-        } else {
-            renderQuestion();
+            createNewArchive(currentModule);
+            currentIdx = 0;
+            workingList = moduleArchives[currentModule].list;
         }
+
+        if (!isWrongMode) {
+            moduleArchives[currentModule].index = currentIdx;
+            saveArchives();
+        }
+        renderQuestion();
     }
 
     function toggleWrongMode() {
         isWrongMode = !isWrongMode;
         const btn = document.getElementById('wrong-btn');
         if (isWrongMode) {
-            if (wrongList.length === 0) { isWrongMode = false; return alert("没带错题本哦！"); }
+            // 获取当前板块的源数据进行过滤
+            let source = [];
+            if (currentModule === 'ppt') source = typeof challengeBank !== 'undefined' ? challengeBank : [];
+            else if (currentModule === 'lab') source = typeof experimentBank !== 'undefined' ? experimentBank : [];
+            else source = typeof bank !== 'undefined' ? bank : [];
+
+            workingList = source.filter(q => wrongList.includes(q.title)).sort(() => Math.random() - 0.5);
+            
+            if (workingList.length === 0) {
+                alert("当前模块没有错题哦！");
+                isWrongMode = false;
+                return;
+            }
             btn.style.boxShadow = "0 0 10px var(--danger)";
-            workingList = rawPool.filter(q => wrongList.includes(q.title)).sort(() => Math.random() - 0.5);
+            currentIdx = 0;
         } else {
             btn.style.boxShadow = "none";
-            initPool(currentModule);
+            setPool(currentModule); // 恢复该板块正常进度
         }
-        currentIdx = 0;
         renderQuestion();
     }
 
-    function saveState() {
-        localStorage.setItem('net_quiz_v6_save', JSON.stringify({
-            module: currentModule,
-            index: currentIdx,
-            list: workingList
-        }));
+    function saveArchives() {
+        localStorage.setItem('net_module_archives_v8', JSON.stringify(moduleArchives));
     }
 
-    function updateWrongDisplay() {
+    function updateWrongCount() {
         localStorage.setItem('net_wrong_list', JSON.stringify(wrongList));
-        document.getElementById('wrong-count').innerText = wrongList.length;
+        
+        // 仅计算当前板块的错题数
+        let source = [];
+        if (currentModule === 'ppt') source = typeof challengeBank !== 'undefined' ? challengeBank : [];
+        else if (currentModule === 'lab') source = typeof experimentBank !== 'undefined' ? experimentBank : [];
+        else source = typeof bank !== 'undefined' ? bank : [];
+        
+        const currentWrongCount = source.filter(q => wrongList.includes(q.title)).length;
+        document.getElementById('wrong-count').innerText = currentWrongCount;
     }
 </script>
 </body>
