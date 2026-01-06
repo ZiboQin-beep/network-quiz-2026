@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>高级计算机网络 - 期末刷题系统4.1</title>
+    <title>高级计算机网络 - 期末刷题系统5.0</title>
     <script src="questions.js"></script>
     <script src="challenge.js"></script>
     <script src="experiment.js"></script>
@@ -11,7 +11,6 @@
         :root { --primary: #007bff; --success: #28a745; --danger: #dc3545; --warning: #ffc107; --bg: #f8f9fa; }
         body { font-family: 'PingFang SC', -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
         .app-container { width: 100%; max-width: 800px; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); padding: 30px; }
-        
         .meta-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 15px; flex-wrap: wrap; gap: 10px; }
         .mode-group { display: flex; gap: 8px; }
         .tag { padding: 6px 16px; border-radius: 50px; color: white; font-size: 14px; font-weight: bold; transition: 0.3s; border: none; cursor: pointer; }
@@ -20,33 +19,25 @@
         .btn-lab { background: #17a2b8; color: white; }
         .tag-wrong { background: var(--danger); cursor: pointer; }
         .inactive { opacity: 0.4; transform: scale(0.95); }
-
         .q-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px; }
         .type-label { padding: 2px 8px; border-radius: 4px; font-size: 12px; color: white; white-space: nowrap; margin-top: 4px; }
         .bg-single { background: #17a2b8; }
         .bg-multi { background: #6f42c1; }
         .bg-judge { background: #fd7e14; }
         .q-title { font-size: 18px; line-height: 1.6; color: #333; font-weight: 600; }
-
         .options-list { display: grid; gap: 12px; margin-bottom: 25px; }
-        .opt-item { padding: 15px; border: 2px solid #ebedf0; border-radius: 10px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; position: relative; }
+        .opt-item { padding: 15px; border: 2px solid #ebedf0; border-radius: 10px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
         .opt-item:hover { background: #f1f3f5; border-color: #dee2e6; }
         .opt-item.selected { border-color: var(--primary); background: #e7f1ff; }
-        .opt-item input { width: 18px; height: 18px; cursor: pointer; }
-
         .feedback { padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; }
         .correct-ans { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .wrong-ans { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .highlight-correct { background: #d4edda !important; border-color: var(--success) !important; }
         .highlight-wrong { background: #f8d7da !important; border-color: var(--danger) !important; }
-
         .actions { display: flex; gap: 15px; }
         button.main-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         #check-btn { background: var(--primary); color: white; }
-        #check-btn:disabled { background: #ccc; cursor: not-allowed; }
         #next-btn { background: #6c757d; color: white; }
-
-        @media (max-width: 500px) { .app-container { padding: 15px; } .meta-info { flex-direction: column; align-items: flex-start; } }
     </style>
 </head>
 <body>
@@ -67,7 +58,7 @@
     <div id="quiz-box">
         <div class="q-header">
             <span id="q-type" class="type-label"></span>
-            <div id="q-title" class="q-title">正在初始化...</div>
+            <div id="q-title" class="q-title"></div>
         </div>
         <div id="options" class="options-list"></div>
         <div id="feedback" class="feedback"></div>
@@ -84,13 +75,24 @@
     let currentIdx = 0;
     let isWrongMode = false;
     let wrongList = JSON.parse(localStorage.getItem('net_wrong_list') || '[]');
+    let currentModule = 'homework';
 
     window.onload = () => {
         updateWrongDisplay();
-        setPool('homework');
+        // --- 恢复历史进度逻辑 ---
+        const savedProgress = JSON.parse(localStorage.getItem('net_quiz_progress'));
+        if (savedProgress) {
+            currentModule = savedProgress.module || 'homework';
+            currentIdx = savedProgress.index || 0;
+            // 如果上次是在错题模式，由于错题名单可能变动，建议默认回到正常模式但保留模块
+            setPool(currentModule, true); 
+        } else {
+            setPool('homework');
+        }
     };
 
-    function setPool(type) {
+    function setPool(type, isResume = false) {
+        currentModule = type;
         isWrongMode = false;
         document.getElementById('mode-homework').classList.add('inactive');
         document.getElementById('mode-ppt').classList.add('inactive');
@@ -108,9 +110,20 @@
             document.getElementById('mode-homework').classList.remove('inactive');
         }
 
-        workingList = [...currentPool].sort(() => Math.random() - 0.5);
-        currentIdx = 0;
+        // 恢复进度时不打乱顺序，否则 Index 会对不上
+        workingList = isResume ? [...currentPool] : [...currentPool].sort(() => Math.random() - 0.5);
+        if(!isResume) currentIdx = 0;
+        
         renderQuestion();
+    }
+
+    // 保存进度到本地
+    function saveProgress() {
+        const progress = {
+            module: currentModule,
+            index: currentIdx
+        };
+        localStorage.setItem('net_quiz_progress', JSON.stringify(progress));
     }
 
     function toggleWrongMode() {
@@ -121,24 +134,21 @@
             btn.style.boxShadow = "0 0 10px var(--danger)";
             workingList = currentPool.filter(q => wrongList.includes(q.title));
             if (workingList.length === 0) {
-                alert("当前选中的板块中没有错题。");
+                alert("该板块暂无对应错题。");
                 isWrongMode = false;
                 btn.style.boxShadow = "none";
                 return;
             }
         } else {
             btn.style.boxShadow = "none";
-            workingList = [...currentPool].sort(() => Math.random() - 0.5);
+            workingList = [...currentPool];
         }
         currentIdx = 0;
         renderQuestion();
     }
 
     function renderQuestion() {
-        if (workingList.length === 0) {
-            document.getElementById('q-title').innerText = "未发现题目，请确保 JS 文件已正确上传。";
-            return;
-        }
+        if (workingList.length === 0) return;
         const q = workingList[currentIdx];
         document.getElementById('feedback').style.display = 'none';
         document.getElementById('next-btn').disabled = true;
@@ -169,6 +179,7 @@
             };
             optContainer.appendChild(div);
         });
+        saveProgress(); // 渲染时即保存当前题目索引
     }
 
     function updateSelectionStyles() {
@@ -189,8 +200,6 @@
         if (isCorrect) {
             feedback.className = 'feedback correct-ans';
             feedback.innerHTML = '<strong>✔ 回答正确！</strong>';
-            
-            // --- 错题清除逻辑 ---
             if (wrongList.includes(q.title)) {
                 wrongList = wrongList.filter(t => t !== q.title);
                 saveWrongList();
@@ -219,7 +228,7 @@
         if (currentIdx < workingList.length) {
             renderQuestion();
         } else {
-            alert("本板块已刷完！");
+            alert("本板块已刷完！将从头开始。");
             currentIdx = 0;
             renderQuestion();
         }
@@ -236,4 +245,3 @@
 </script>
 </body>
 </html>
-
