@@ -98,7 +98,7 @@ const challengeBank = [
     { type: "single", title: "IPv6 组播地址格式中，Flags 字段的 T 位为 1 代表什么？", options: ["永久地址", "临时地址", "含RP的地址", "本地地址"], answer: [1] },
     { type: "single", title: "用于在 IPv6 主机与路由器之间管理组播成员关系的协议是？", options: ["IGMP", "MLD", "PIM", "BGP"], answer: [1] },
     { type: "single", title: "组播路由中 RPF 检查的主要目的是？", options: ["寻找最短路径", "防止组播数据环路", "选举DR", "发现邻居"], answer: [1] },
-    { type: "multi", title: "组播地址范围（Scope）字段中，5 代表什么范围？", options: ["节点本地", "链路本地", "站点本地", "全球范围"], answer: [2] },
+    { type: "single", title: "组播地址范围（Scope）字段中，5 代表什么范围？", options: ["节点本地", "链路本地", "站点本地", "全球范围"], answer: [2] },
     { type: "judge", title: "BIERv6 转发组播数据时，不需要建立组播分发树，也不需要中间节点维护状态。", options: ["正确", "错误"], answer: [0] },
     { type: "judge", title: "【PPT思考题】IPv6组播MAC地址映射过程中，由于只映射了后32位，可能存在多对一的映射冲突。", options: ["正确", "错误"], answer: [0] },
     { type: "single", title: "PIM-DM 运行机制中，周期性将流量扩散到全网的行为称为？", options: ["泛洪 (Flood)", "剪枝 (Prune)", "嫁接 (Graft)", "断路 (Assert)"], answer: [0] },
@@ -146,4 +146,5 @@ const challengeBank = [
     { type: "single", title: "BGP 中的 MED 属性主要用于告知邻居 AS 进入本 AS 的首选路径。", options: ["正确", "错误"], answer: [0] },
     { type: "judge", title: "BGP 选路中，Router-ID 越小的邻居越优先。", options: ["正确", "错误"], answer: [0] },
     { type: "single", title: "OSPFv3 中 LSA 类型的 LS Type 取值 0x2001 代表？", options: ["Router-LSA", "Network-LSA", "Link-LSA", "Intra-Area-Prefix-LSA"], answer: [0] },
+
 ];
