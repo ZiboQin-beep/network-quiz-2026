@@ -78,7 +78,7 @@ const challengeBank = [
 
 // === 模块七：BGP 协议深度细节（第6讲 & 补充考点） ===
     { type: "single", title: "BGP 协议使用的传输层协议及端口号是？", options: ["UDP 179", "TCP 179", "TCP 89", "ICMPv6 58"], answer: [1] },
-    { type: "single", title: "BGP 选路原则中，Preferred-Value（权重）属性的特点是？", options: ["AS间传递", "仅在本地有效", "越大越优先", "B和C均对"], answer: [3] },
+     { type: "multi", title: "BGP 选路原则中，Preferred-Value（权重）属性的特点是？", options: ["AS间传递", "仅在本地有效", "越大越优先", "越小越优先"], answer: [1, 2] },
     { type: "single", title: "BGP 中用于在 AS 内部防止路由环路的机制是？", options: ["AS_Path检测", "IBGP水平分割", "设置Hold Time", "触发更新"], answer: [1] },
     { type: "single", title: "BGP 选路原则中，AS_Path 属性的比较规则是？", options: ["AS_Path 越长越优", "AS_Path 越短越优", "选择不包含 AS_Path 的路径", "随机选择"], answer: [1] },
     { type: "single", title: "BGP 状态机中，发送 Open 报文后进入的状态是？", options: ["Idle", "Connect", "OpenSent", "Established"], answer: [2] },
@@ -148,3 +148,4 @@ const challengeBank = [
     { type: "single", title: "OSPFv3 中 LSA 类型的 LS Type 取值 0x2001 代表？", options: ["Router-LSA", "Network-LSA", "Link-LSA", "Intra-Area-Prefix-LSA"], answer: [0] },
 
 ];
+
